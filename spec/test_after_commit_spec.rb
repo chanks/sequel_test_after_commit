@@ -17,6 +17,24 @@ describe Sequel::TestAfterCommit do
     @callbacks.should == []
   end
 
+  it "should still not run hooks until after the transaction finishes" do
+    @db.transaction do
+      @db.after_commit   { @db.execute "after_commit"   }
+      @db.after_rollback { @db.execute "after_rollback" }
+    end
+
+    @db.sqls.should == ["BEGIN", "COMMIT", "after_commit"]
+    @db.sqls.clear
+
+    @db.transaction do
+      @db.after_commit   { @db.execute "after_commit"   }
+      @db.after_rollback { @db.execute "after_rollback" }
+      raise Sequel::Rollback
+    end
+
+    @db.sqls.should == ["BEGIN", "ROLLBACK", "after_rollback"]
+  end
+
   it "should not interfere with the usual operation of the hooks when a transaction commits" do
     @db.transaction do
       @db.after_commit { @callbacks << :first_after_commit }
