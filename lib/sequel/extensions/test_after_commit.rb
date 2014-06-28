@@ -16,7 +16,7 @@ module Sequel
           end
         end
       end
-
+    ensure
       super
     end
 
