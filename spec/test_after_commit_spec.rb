@@ -86,6 +86,41 @@ describe Sequel::TestAfterCommit do
     @callbacks.should == [:second_after_commit, :third_after_commit, :first_after_commit]
   end
 
+  it "should run new after_commit callbacks immediately when in the after_commit stage" do
+    @db.transaction do
+      @db.after_commit do
+        @db.after_commit { @callbacks << :after_commit_1_1 }
+        @callbacks << :after_commit_1
+        @db.after_commit { @callbacks << :after_commit_1_2 }
+      end
+      @callbacks.should == []
+
+      @db.transaction :savepoint => true do
+        @db.after_commit do
+          @db.after_commit { @callbacks << :after_commit_2_1 }
+          @callbacks << :after_commit_2
+          @db.after_commit { @callbacks << :after_commit_2_2 }
+        end
+        @callbacks.should == []
+      end
+
+      @callbacks.should == [:after_commit_2_1, :after_commit_2, :after_commit_2_2]
+
+      @db.transaction :savepoint => true do
+        @db.after_commit do
+          @db.after_commit { @callbacks << :after_commit_3_1 }
+          @callbacks << :after_commit_3
+          @db.after_commit { @callbacks << :after_commit_3_2 }
+        end
+        @callbacks.should == [:after_commit_2_1, :after_commit_2, :after_commit_2_2]
+      end
+
+      @callbacks.should == [:after_commit_2_1, :after_commit_2, :after_commit_2_2, :after_commit_3_1, :after_commit_3, :after_commit_3_2]
+    end
+
+    @callbacks.should == [:after_commit_2_1, :after_commit_2, :after_commit_2_2, :after_commit_3_1, :after_commit_3, :after_commit_3_2, :after_commit_1_1, :after_commit_1, :after_commit_1_2]
+  end
+
   it "should run after_rollback callbacks after the subtransaction in which they are declared rolls back" do
     @db.transaction do
       @db.after_commit   { @callbacks << :first_after_commit }
