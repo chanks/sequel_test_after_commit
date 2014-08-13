@@ -1,4 +1,4 @@
-#### 0.0.4 (Unreleased)
+#### 0.0.4 (2014-08-12)
 
 *   When declaring an after_commit callback within another after_commit callback, it is now processed immediately rather than being added to the queue. This may not be expected behavior for some cases, but is consistent with the notion of treating the period immediately after a subtransaction ends as being outside of any transaction for testing purposes.
 
